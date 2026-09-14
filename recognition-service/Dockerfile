@@ -1,5 +1,10 @@
 FROM python:3.11-slim
 
+ARG APP_VERSION=1.0.0
+ARG GIT_COMMIT=unknown
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_COMMIT=${GIT_COMMIT}
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -11,7 +11,9 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from redis import Redis
+from redis.exceptions import RedisError
+from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
@@ -20,6 +22,8 @@ from app.core.logging_config import configurar_logging
 from app.middleware.logging import request_logging_middleware
 from app.middleware.rate_limit import rate_limit_middleware
 from app.routes import admin, alunos, auth, notificacoes, presencas, reconhecimento
+from app.database.session import SessionLocal
+from app.tasks.celery_app import celery_app
 
 configurar_logging()
 logger = logging.getLogger(__name__)
@@ -41,15 +45,15 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(
     title="Sistema Escolar API",
-    version="2.0.0",
+    version=settings.APP_VERSION,
     docs_url="/docs" if not settings.is_production else None,
     redoc_url=None,
     lifespan=lifespan,
 )
 
-origins = ["http://localhost:5173", "http://localhost:3000"]
-if settings.FRONTEND_URL:
-    origins.append(settings.FRONTEND_URL)
+origins = [settings.FRONTEND_URL] if settings.FRONTEND_URL else []
+if not settings.is_production:
+    origins.extend(["http://localhost:5173", "http://localhost:3000"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -71,7 +75,6 @@ app.include_router(presencas.recognition_router, prefix="/api/recognition", tags
 app.include_router(reconhecimento.router, prefix="/api/reconhecimento", tags=["Reconhecimento"])
 
 os.makedirs("uploads/alunos", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -106,8 +109,7 @@ def startup():
     logger.info("Aplicacao iniciada - ambiente: %s", settings.ENVIRONMENT)
     
     if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
-        logger.debug("Seed admin desabilitado: credenciais nao configuradas")
-        return
+        raise RuntimeError("ADMIN_EMAIL e ADMIN_PASSWORD sao obrigatorios para iniciar o backend.")
 
     from sqlalchemy.orm import Session as DBSession
     from app.database.session import SessionLocal
@@ -171,15 +173,69 @@ def startup():
             else:
                 logger.debug("Admin ja estava sincronizado")
 
-    except Exception as e:
-        logger.error("Erro ao sincronizar admin: %s", str(e), exc_info=True)
+    except Exception as exc:
+        logger.error("Erro ao sincronizar admin: %s", str(exc), exc_info=True)
+        raise
     finally:
         db.close()
 
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "2.0.0"}
+    checks = {"database": "ok", "redis": "ok", "worker": "ok"}
+    http_status = status.HTTP_200_OK
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("Healthcheck do banco falhou")
+        checks["database"] = "error"
+        http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+    finally:
+        db.close()
+
+    if not settings.REDIS_URL:
+        checks["redis"] = "not_configured"
+        if settings.is_production:
+            http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        redis = Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2, socket_timeout=2)
+        try:
+            redis.ping()
+        except RedisError:
+            logger.exception("Healthcheck do Redis falhou")
+            checks["redis"] = "error"
+            if settings.is_production:
+                http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+        finally:
+            redis.close()
+
+    if celery_app is None:
+        checks["worker"] = "not_configured"
+        if settings.is_production:
+            http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+    else:
+        try:
+            workers = celery_app.control.inspect(timeout=1).ping() or {}
+            if not workers:
+                checks["worker"] = "unavailable"
+                if settings.is_production:
+                    http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+        except Exception:
+            logger.exception("Healthcheck do worker falhou")
+            checks["worker"] = "error"
+            if settings.is_production:
+                http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return JSONResponse(
+        status_code=http_status,
+        content={
+            "status": "ok" if http_status == status.HTTP_200_OK else "error",
+            "version": settings.APP_VERSION,
+            "commit": settings.GIT_COMMIT,
+            **checks,
+        },
+    )
 
 
 def _frontend_url_for_request(path: str, query: str = "") -> str | None:

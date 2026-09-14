@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.models import Usuario
-from app.routes.auth import get_current_user
+from app.routes.auth import require_operator
 from app.schemas.schemas import (
     AlunoCreate,
     AlunoFotoResponse,
@@ -36,7 +36,7 @@ def _validar_aluno_form(schema_cls, **dados):
 
 @router.get("/turmas", response_model=List[str])
 def listar_turmas(
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.listar_turmas(user)
@@ -54,7 +54,7 @@ def listar(
     criado_ate: Optional[date] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     """Lista alunos com paginação.
@@ -86,7 +86,7 @@ def criar(
     telefone: str = Form(...),
     turma: str = Form(""),
     foto: UploadFile = File(None),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     payload = _validar_aluno_form(
@@ -109,7 +109,7 @@ def criar(
 @router.get("/{aluno_id}", response_model=AlunoResponse)
 def buscar(
     aluno_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.buscar(user, aluno_id)
@@ -118,17 +118,27 @@ def buscar(
 @router.post("/{aluno_id}/retry-biometria", response_model=AlunoResponse)
 def retry_biometria(
     aluno_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.retry_biometria(user, aluno_id)
+
+
+@router.delete("/{aluno_id}/biometria")
+def excluir_biometria(
+    aluno_id: int,
+    user: Usuario = Depends(require_operator),
+    service: AlunoService = Depends(get_aluno_service),
+):
+    """Exclusao formal e coordenada de fotos e embeddings do aluno."""
+    return service.excluir_biometria(user, aluno_id)
 
 
 @router.post("/{aluno_id}/responsaveis", response_model=ResponsavelResponse, status_code=201)
 def vincular_responsavel(
     aluno_id: int,
     payload: ResponsavelCreate,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.vincular_responsavel(user, aluno_id, payload)
@@ -137,7 +147,7 @@ def vincular_responsavel(
 @router.get("/{aluno_id}/fotos", response_model=List[AlunoFotoResponse])
 def listar_fotos(
     aluno_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.listar_fotos(user, aluno_id)
@@ -147,7 +157,7 @@ def listar_fotos(
 def adicionar_foto(
     aluno_id: int,
     foto: UploadFile = File(...),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     return service.adicionar_foto(user, aluno_id, foto)
@@ -157,7 +167,7 @@ def adicionar_foto(
 def deletar_foto(
     aluno_id: int,
     foto_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     service.deletar_foto(user, aluno_id, foto_id)
@@ -171,7 +181,7 @@ def atualizar(
     telefone: str = Form(...),
     turma: str = Form(""),
     foto: UploadFile = File(None),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     payload = _validar_aluno_form(
@@ -195,7 +205,7 @@ def atualizar(
 @router.delete("/{aluno_id}", status_code=204)
 def deletar(
     aluno_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: AlunoService = Depends(get_aluno_service),
 ):
     service.deletar(user, aluno_id)

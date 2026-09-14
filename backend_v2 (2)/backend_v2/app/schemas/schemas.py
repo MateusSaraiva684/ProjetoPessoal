@@ -310,6 +310,7 @@ class AtualizarUsuarioRequest(BaseModel):
     nome: Optional[str] = Field(None, min_length=1, max_length=255)
     email: Optional[EmailStr] = None
     ativo: Optional[bool] = None
+    role: Optional[Literal["superadmin", "gestor", "operator"]] = None
     
     @field_validator("nome")
     @classmethod

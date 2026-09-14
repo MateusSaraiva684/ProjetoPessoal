@@ -6,7 +6,7 @@ from app.core.exceptions import BadRequestError
 from app.core.trace import gerar_trace_id
 from app.database.session import get_db
 from app.models.models import Usuario
-from app.routes.auth import get_current_user
+from app.routes.auth import require_operator
 from app.schemas.schemas import (
     ReconhecimentoFacialResponse,
     ReconhecimentoIdentificacaoResponse,
@@ -80,7 +80,7 @@ async def _extrair_payload_imagem(request: Request, trace_id: str) -> FaceImageP
 async def reconhecer_facial(
     request: Request,
     x_trace_id: str | None = Header(default=None, alias="X-Trace-Id"),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     workflow: ReconhecimentoFacialWorkflow = Depends(get_reconhecimento_workflow),
 ):
     trace_id = x_trace_id or gerar_trace_id("reconhecimento", user.id)
@@ -98,7 +98,7 @@ async def reconhecer_facial(
 async def identificar_facial(
     request: Request,
     x_trace_id: str | None = Header(default=None, alias="X-Trace-Id"),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     workflow: ReconhecimentoFacialWorkflow = Depends(get_reconhecimento_workflow),
 ):
     trace_id = x_trace_id or gerar_trace_id("reconhecimento", user.id)

@@ -101,26 +101,6 @@ class AuthService:
             logger.info("Login realizado: %s", body.email)
             return user
 
-        # Usuário não existe - permitir fallback apenas para admin
-        if body.email == settings.ADMIN_EMAIL and body.senha == settings.ADMIN_PASSWORD:
-            user = Usuario(
-                nome="Administrador",
-                email=settings.ADMIN_EMAIL,
-                senha=hash_senha(settings.ADMIN_PASSWORD),
-                is_superuser=True,
-                ativo=True,
-            )
-            try:
-                self.usuarios.add(user)
-                self.db.commit()
-                self.db.refresh(user)
-                logger.info("Admin criado automaticamente: %s", body.email)
-                return user
-            except Exception as e:
-                self.db.rollback()
-                logger.error("Erro ao criar admin: %s", str(e))
-                raise UnauthorizedError("Erro ao processar login") from e
-
         raise UnauthorizedError("E-mail ou senha incorretos")
 
     def iniciar_mfa(self, user: Usuario) -> str:

@@ -8,7 +8,7 @@ services:
       - APP_ENV=development
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://user:password@db:5432/reconhecimento
-      - RECOGNITION_API_KEYS=dev-recognition-key
+      - RECOGNITION_API_KEYS=${RECOGNITION_API_KEYS:?RECOGNITION_API_KEYS must be set}
       - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
       - SIMILARITY_THRESHOLD=0.75
       - MATCH_AMBIGUITY_MARGIN=${MATCH_AMBIGUITY_MARGIN:-0.02}
@@ -17,8 +17,11 @@ services:
       - PHOTO_URL_ALLOWED_HOSTS=${PHOTO_URL_ALLOWED_HOSTS:-res.cloudinary.com}
       - PHOTO_URL_TIMEOUT_SECONDS=${PHOTO_URL_TIMEOUT_SECONDS:-8}
       - USE_GPU=false
+      - WEBHOOK_MAX_ATTEMPTS=${WEBHOOK_MAX_ATTEMPTS:-5}
+      - WEBHOOK_RETRY_SECONDS=${WEBHOOK_RETRY_SECONDS:-60}
+      - BIOMETRIC_RETENTION_DAYS=${BIOMETRIC_RETENTION_DAYS:-365}
       - SAAS_PRESENCE_WEBHOOK_URL=${SAAS_PRESENCE_WEBHOOK_URL:-http://host.docker.internal:8000/api/recognition/presences}
-      - SAAS_WEBHOOK_SECRET=${SAAS_WEBHOOK_SECRET:-webhook-secret}
+      - SAAS_WEBHOOK_SECRET=${SAAS_WEBHOOK_SECRET:?SAAS_WEBHOOK_SECRET must be set}
       - SAAS_WEBHOOK_TIMEOUT_SECONDS=${SAAS_WEBHOOK_TIMEOUT_SECONDS:-5}
       - SCHOOL_ID=${SCHOOL_ID:-escola_1}
       - CAMERA_ID=${CAMERA_ID:-entrada_principal}
@@ -56,18 +59,21 @@ services:
   worker:
     build: .
     container_name: recognition-worker
-    command: rq worker --url redis://redis:6379 --with-scheduler recognition
+    command: rq worker --url redis://redis:6379 --with-scheduler recognition webhook-retry
     environment:
       - APP_ENV=development
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://user:password@db:5432/reconhecimento
-      - RECOGNITION_API_KEYS=dev-recognition-key
+      - RECOGNITION_API_KEYS=${RECOGNITION_API_KEYS:?RECOGNITION_API_KEYS must be set}
       - SIMILARITY_THRESHOLD=0.75
       - MATCH_AMBIGUITY_MARGIN=${MATCH_AMBIGUITY_MARGIN:-0.02}
       - LOG_LEVEL=INFO
       - USE_GPU=false
+      - WEBHOOK_MAX_ATTEMPTS=${WEBHOOK_MAX_ATTEMPTS:-5}
+      - WEBHOOK_RETRY_SECONDS=${WEBHOOK_RETRY_SECONDS:-60}
+      - BIOMETRIC_RETENTION_DAYS=${BIOMETRIC_RETENTION_DAYS:-365}
       - SAAS_PRESENCE_WEBHOOK_URL=${SAAS_PRESENCE_WEBHOOK_URL:-http://host.docker.internal:8000/api/recognition/presences}
-      - SAAS_WEBHOOK_SECRET=${SAAS_WEBHOOK_SECRET:-webhook-secret}
+      - SAAS_WEBHOOK_SECRET=${SAAS_WEBHOOK_SECRET:?SAAS_WEBHOOK_SECRET must be set}
       - SAAS_WEBHOOK_TIMEOUT_SECONDS=${SAAS_WEBHOOK_TIMEOUT_SECONDS:-5}
       - SCHOOL_ID=${SCHOOL_ID:-escola_1}
       - CAMERA_ID=${CAMERA_ID:-entrada_principal}
@@ -82,6 +88,21 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  retention:
+    build: .
+    container_name: recognition-retention
+    command: python scripts/purge_biometrics.py --loop
+    environment:
+      - DATABASE_URL=******db:5432/reconhecimento
+      - BIOMETRIC_RETENTION_DAYS=${BIOMETRIC_RETENTION_DAYS:-365}
+      - LOG_LEVEL=INFO
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   redis:
     image: redis:7
@@ -100,15 +121,15 @@ services:
     image: ankane/pgvector
     container_name: recognition-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: reconhecimento
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-reconhecimento}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-user}"]
       interval: 10s
       timeout: 5s
       retries: 3

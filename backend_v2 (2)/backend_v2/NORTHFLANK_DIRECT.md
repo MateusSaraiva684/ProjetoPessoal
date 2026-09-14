@@ -83,9 +83,9 @@ Quando terminar, Northflank gera uma `DATABASE_URL` automaticamente.
 
 ---
 
-## PASSO 7: Provisionar Redis (Opcional - 5 min)
+## PASSO 7: Provisionar Redis (Obrigatorio - 5 min)
 
-Se você usa Celery para background tasks:
+O backend usa Redis para rate limiting distribuido e o worker Celery e obrigatorio:
 
 1. Clique "Add Cache"
 2. Tipo: **Redis**
@@ -93,7 +93,8 @@ Se você usa Celery para background tasks:
 4. Instance: **Micro**
 5. Clique "Create"
 
-Northflank gera `REDIS_URL` automaticamente.
+Northflank gera `REDIS_URL` automaticamente. Vincule o mesmo secret `REDIS_URL`
+ao backend, ao `celery-worker` e ao servico `biometric-retention`.
 
 ---
 
@@ -205,7 +206,7 @@ Sua app está rodando em Northflank! 🎉
 
 ### Testar:
 
-- Health: `https://seu-app-xyz.run.northflank.io/health`
+- Health: `https://seu-app-xyz.run.northflank.io/api/health`
 - Docs: `https://seu-app-xyz.run.northflank.io/docs`
 - Admin: `https://seu-app-xyz.run.northflank.io/admin` (depende da sua implementação)
 

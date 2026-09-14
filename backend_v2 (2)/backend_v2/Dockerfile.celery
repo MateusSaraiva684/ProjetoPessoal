@@ -1,5 +1,4 @@
-# Dockerfile para Celery Worker (opcional)
-# Use este arquivo apenas se precisar de workers assíncronos
+# Dockerfile para o worker obrigatorio de tarefas assíncronas
 
 FROM python:3.11-slim as builder
 
@@ -25,4 +24,4 @@ COPY . .
 # Celery worker não expõe porta HTTP
 # Apenas se conecta ao Redis/RabbitMQ
 
-CMD ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-c", "4"]
+CMD ["celery", "-A", "app.tasks.celery_app:celery_app", "worker", "--loglevel=info", "-c", "4"]

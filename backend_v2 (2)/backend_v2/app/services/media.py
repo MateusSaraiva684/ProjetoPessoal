@@ -15,6 +15,7 @@ _cloudinary_configured = False
 def _get_cloudinary_uploader(raise_on_missing: bool = True):
     try:
         import cloudinary
+        import cloudinary.utils
         import cloudinary.uploader
     except ImportError as exc:
         logger.error("Cloudinary nao esta disponivel no ambiente atual")
@@ -53,13 +54,24 @@ def salvar_foto(foto: UploadFile | None) -> str | None:
 
     uploader = _get_cloudinary_uploader()
     try:
+        import cloudinary
+        import cloudinary.utils
+
         resultado = uploader.upload(
             conteudo,
             folder="sistema_escolar/alunos",
             resource_type="image",
+            type="authenticated",
             transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
         )
-        return resultado["secure_url"]
+        signed_url, _ = cloudinary.utils.cloudinary_url(
+            resultado["public_id"],
+            secure=True,
+            sign_url=True,
+            type="authenticated",
+            resource_type="image",
+        )
+        return signed_url
     except Exception as exc:
         logger.error("Erro ao fazer upload para Cloudinary: %s", exc)
         raise AppError(500, "Erro ao salvar a foto. Tente novamente.") from exc
@@ -77,10 +89,14 @@ def deletar_foto_cloudinary(url: str | None):
     try:
         partes = url.split("/upload/")
         if len(partes) == 2:
-            public_id_com_ext = partes[1]
-            if public_id_com_ext.startswith("v") and "/" in public_id_com_ext:
-                public_id_com_ext = public_id_com_ext.split("/", 1)[1]
+            path_parts = partes[1].split("/")
+            version_index = next(
+                (index for index, part in enumerate(path_parts) if part.startswith("v") and part[1:].isdigit()),
+                None,
+            )
+            public_id_com_ext = "/".join(path_parts[version_index + 1:]) if version_index is not None else partes[1]
             public_id = public_id_com_ext.rsplit(".", 1)[0]
-            uploader.destroy(public_id)
+            delivery_type = "authenticated" if "/authenticated/" in url else "upload"
+            uploader.destroy(public_id, type=delivery_type)
     except Exception as exc:
         logger.warning("Nao foi possivel deletar foto do Cloudinary: %s", exc)

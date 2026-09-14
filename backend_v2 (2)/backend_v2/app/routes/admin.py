@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 def get_superuser(user: Usuario = Depends(get_current_user)) -> Usuario:
-    if not user.is_superuser:
+    if user.role != "superadmin" or not user.is_superuser:
         raise ForbiddenError("Acesso restrito a administradores")
     return user
 

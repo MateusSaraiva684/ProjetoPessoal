@@ -73,6 +73,7 @@ class AdminService:
                 "email": u.email,
                 "ativo": u.ativo,
                 "is_superuser": u.is_superuser,
+                "role": u.role,
                 "criado_em": u.criado_em,
                 "total_alunos": totais_alunos.get(u.id, 0),
             }
@@ -102,6 +103,10 @@ class AdminService:
         usuario = self._buscar_usuario(usuario_id)
         if usuario.is_superuser and usuario.id != admin.id:
             raise ForbiddenError("Nao e possivel editar outro superusuario")
+        if body.role is not None and admin.role != "superadmin":
+            raise ForbiddenError("Somente superadmin pode alterar papeis")
+        if body.role == "superadmin" and not usuario.is_superuser:
+            raise ForbiddenError("O papel superadmin exige is_superuser")
         if usuario.is_superuser and body.email is not None and body.email != usuario.email:
             raise ForbiddenError(
                 "Altere o e-mail do administrador pela configuracao ADMIN_EMAIL"
@@ -116,6 +121,8 @@ class AdminService:
             usuario.email = body.email
         if body.ativo is not None:
             usuario.ativo = body.ativo
+        if body.role is not None:
+            usuario.role = body.role
         self.db.commit()
         registrar_auditoria(
             self.db,
@@ -123,11 +130,17 @@ class AdminService:
             action="admin.user.updated",
             resource_type="usuario",
             resource_id=usuario.id,
-            metadata={"fields": [field for field, value in {"nome": body.nome, "ativo": body.ativo}.items() if value is not None]},
+            metadata={"fields": [field for field, value in {"nome": body.nome, "ativo": body.ativo, "role": body.role}.items() if value is not None]},
         )
         self.db.commit()
         logger.info("Usuario id=%d atualizado pelo admin id=%d", usuario_id, admin.id)
-        return {"id": usuario.id, "nome": usuario.nome, "email": usuario.email, "ativo": usuario.ativo}
+        return {
+            "id": usuario.id,
+            "nome": usuario.nome,
+            "email": usuario.email,
+            "ativo": usuario.ativo,
+            "role": usuario.role,
+        }
 
     def redefinir_senha(
         self,

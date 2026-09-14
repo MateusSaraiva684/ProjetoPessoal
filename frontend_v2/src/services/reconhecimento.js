@@ -153,6 +153,9 @@ export async function verificarBackendSaas() {
       online: true,
       status: data?.status || 'ok',
       version: data?.version || null,
+      commit: data?.commit || null,
+      frontendVersion: import.meta.env.VITE_APP_VERSION || '2.0.0',
+      frontendCommit: import.meta.env.VITE_GIT_COMMIT || 'unknown',
     }
   } catch (error) {
     return {

@@ -103,6 +103,8 @@ def _derive_face_recognition_service_url(
 
 
 class Settings:
+    APP_VERSION: str = os.getenv("APP_VERSION", "2.0.0")
+    GIT_COMMIT: str = os.getenv("GIT_COMMIT", "unknown")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
@@ -171,6 +173,8 @@ if settings.ENVIRONMENT not in ("testing",):
         raise RuntimeError("DATABASE_URL não definida nas variáveis de ambiente.")
     if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
         raise RuntimeError("ADMIN_EMAIL e ADMIN_PASSWORD não definidos nas variáveis de ambiente.")
+    if settings.is_production and not settings.REDIS_URL:
+        raise RuntimeError("REDIS_URL não definida nas variáveis de ambiente em production.")
     if settings.is_production and len(settings.SECRET_KEY) < 32:
         raise RuntimeError("SECRET_KEY deve ter pelo menos 32 caracteres em production.")
     if settings.is_production and settings.RECOGNITION_WEBHOOK_SECRET and len(settings.RECOGNITION_WEBHOOK_SECRET) < 32:

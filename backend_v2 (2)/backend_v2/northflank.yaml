@@ -16,6 +16,14 @@ services:
         value: "true"
       - name: PORT
         value: "8000"
+      - name: APP_VERSION
+        value: ${APP_VERSION}
+      - name: GIT_COMMIT
+        value: ${GIT_COMMIT}
+      - name: DATABASE_URL
+        value: ${DATABASE_URL}
+      - name: REDIS_URL
+        value: ${REDIS_URL}
     
     # Secrets (configurar no dashboard do Northflank)
     secrets:
@@ -42,18 +50,53 @@ services:
     # Restart policy
     restartPolicy: always
 
-  # Serviço Celery Worker (opcional, se usar background tasks)
+  # Serviço obrigatório: notificações e tarefas assíncronas dependem dele.
   - name: celery-worker
     type: docker
     buildCommand: docker build -t celery-worker -f Dockerfile.celery .
     environmentVariables:
       - name: ENVIRONMENT
         value: production
+      - name: APP_VERSION
+        value: ${APP_VERSION}
+      - name: GIT_COMMIT
+        value: ${GIT_COMMIT}
+      - name: REDIS_URL
+        value: ${REDIS_URL}
+      - name: DATABASE_URL
+        value: ${DATABASE_URL}
     secrets:
       - name: REDIS_URL
       - name: DATABASE_URL
+      - name: SECRET_KEY
+      - name: ADMIN_EMAIL
+      - name: ADMIN_PASSWORD
       - name: CELERY_BROKER_URL
       - name: CELERY_RESULT_BACKEND
+    restartPolicy: always
+
+  - name: biometric-retention
+    type: docker
+    buildCommand: docker build -t biometric-retention .
+    command: python retention.py --loop
+    environmentVariables:
+      - name: ENVIRONMENT
+        value: production
+      - name: BIOMETRIC_RETENTION_DAYS
+        value: "365"
+      - name: DATABASE_URL
+        value: ${DATABASE_URL}
+      - name: REDIS_URL
+        value: ${REDIS_URL}
+    secrets:
+      - name: DATABASE_URL
+      - name: REDIS_URL
+      - name: SECRET_KEY
+      - name: ADMIN_EMAIL
+      - name: ADMIN_PASSWORD
+      - name: CLOUDINARY_CLOUD_NAME
+      - name: CLOUDINARY_API_KEY
+      - name: CLOUDINARY_API_SECRET
     restartPolicy: always
 
 databases:

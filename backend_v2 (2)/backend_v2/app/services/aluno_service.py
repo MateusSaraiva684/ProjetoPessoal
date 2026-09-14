@@ -9,13 +9,14 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.core.exceptions import BadRequestError, NotFoundError
+from app.core.exceptions import BadRequestError, NotFoundError, ServiceUnavailableError
 from app.core.trace import gerar_trace_id
-from app.models.models import Aluno, AlunoFoto, Responsavel, Usuario
+from app.models.models import Aluno, AlunoFoto, FaceEmbedding, Responsavel, Usuario
 from app.repositories.aluno_repository import AlunoRepository
 from app.schemas.schemas import ResponsavelCreate
 from app.services.integration_service import IntegrationService
 from app.services.storage_service import StorageService, StoredPhoto
+from app.services.audit_service import registrar_auditoria
 
 logger = logging.getLogger(__name__)
 
@@ -462,6 +463,39 @@ class AlunoService:
         self._recalcular_status_biometria(aluno, deleted_status=deleted_status, deleted_error=deleted_error)
         self.db.commit()
         self.storage_service.delete_photo(foto_url)
+
+    def excluir_biometria(self, user: Usuario, aluno_id: int) -> dict:
+        aluno = self.buscar_para_usuario_ou_admin(user, aluno_id)
+        trace_id = gerar_trace_id("exclusao-biometrica", aluno.id)
+        result = self.integration_service.delete_aluno_biometria(aluno, trace_id=trace_id)
+        if not result.success:
+            raise ServiceUnavailableError(
+                "A biometria nao foi excluida no servico de reconhecimento. Tente novamente."
+            )
+
+        fotos = list(aluno.fotos)
+        for foto in fotos:
+            self.storage_service.delete_photo(foto.url)
+            self.db.delete(foto)
+        self.db.query(FaceEmbedding).filter(FaceEmbedding.aluno_id == aluno.id).delete(
+            synchronize_session=False
+        )
+        aluno.foto = None
+        aluno.face_samples_count = 0
+        aluno.biometria_status = "no_photo"
+        aluno.biometria_error = None
+        aluno.biometria_atualizada_em = datetime.now(timezone.utc)
+        self.db.commit()
+        registrar_auditoria(
+            self.db,
+            actor_user_id=user.id,
+            action="biometria.excluida",
+            resource_type="aluno",
+            resource_id=aluno.id,
+            metadata={"trace_id": trace_id, "photos_deleted": len(fotos)},
+        )
+        self.db.commit()
+        return {"status": "deleted", "aluno_id": aluno.id, "photos_deleted": len(fotos)}
 
     @staticmethod
     def _snapshot_aluno(aluno: Aluno) -> SimpleNamespace:

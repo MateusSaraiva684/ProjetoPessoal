@@ -36,6 +36,8 @@ logging.basicConfig(
 
 # App Settings
 APP_ENV = os.getenv("APP_ENV", "development").lower()
+APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+GIT_COMMIT = os.getenv("GIT_COMMIT", "unknown")
 
 # Redis Configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://recognition-redis:6379")
@@ -57,13 +59,19 @@ PHOTO_URL_ALLOWED_HOSTS = _get_csv("PHOTO_URL_ALLOWED_HOSTS", "res.cloudinary.co
 JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "60"))
 JOB_RESULT_TTL_SECONDS = int(os.getenv("JOB_RESULT_TTL_SECONDS", "3600"))
 JOB_FAILURE_TTL_SECONDS = int(os.getenv("JOB_FAILURE_TTL_SECONDS", "86400"))
+WEBHOOK_MAX_ATTEMPTS = _get_int("WEBHOOK_MAX_ATTEMPTS", "5")
+WEBHOOK_RETRY_SECONDS = _get_int("WEBHOOK_RETRY_SECONDS", "60")
+BIOMETRIC_RETENTION_DAYS = _get_int("BIOMETRIC_RETENTION_DAYS", "365")
 
 # Face Recognition Settings
 USE_GPU = _get_bool("USE_GPU", "false")
 
 # Security Settings
 API_KEYS = _get_csv("RECOGNITION_API_KEYS")
-CORS_ORIGINS = _get_csv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173")
+CORS_ORIGINS = _get_csv(
+    "CORS_ORIGINS",
+    "" if APP_ENV == "production" else "http://localhost:3000,http://localhost:5173",
+)
 
 # SaaS Webhook Settings
 SAAS_PRESENCE_WEBHOOK_URL = (

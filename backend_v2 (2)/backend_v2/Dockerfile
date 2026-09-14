@@ -19,6 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Stage final
 FROM python:3.11-slim
 
+ARG APP_VERSION=2.0.0
+ARG GIT_COMMIT=unknown
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_COMMIT=${GIT_COMMIT}
+
 # Instalar apenas runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
@@ -42,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:8000/api/health', timeout=5)" || exit 1
 
 # Comando para iniciar a aplicação
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

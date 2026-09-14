@@ -40,7 +40,7 @@ APP_ENV=development
 REDIS_URL=redis://redis:6379
 DATABASE_URL=postgresql://user:password@db:5432/reconhecimento
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
-RECOGNITION_API_KEYS=dev-recognition-key
+RECOGNITION_API_KEYS=replace-with-a-long-random-key
 SIMILARITY_THRESHOLD=0.75
 MATCH_AMBIGUITY_MARGIN=0.02
 MAX_FILE_SIZE_MB=10
@@ -50,8 +50,11 @@ USE_GPU=false
 SCHOOL_ID=escola_1
 CAMERA_ID=entrada_principal
 SAAS_PRESENCE_WEBHOOK_URL=http://host.docker.internal:8000/api/recognition/presences
-SAAS_WEBHOOK_SECRET=webhook-secret
+SAAS_WEBHOOK_SECRET=replace-with-a-different-long-random-secret
 PRESENCE_DEDUP_WINDOW_SECONDS=300
+WEBHOOK_MAX_ATTEMPTS=5
+WEBHOOK_RETRY_SECONDS=60
+BIOMETRIC_RETENTION_DAYS=365
 ```
 
 `RECOGNITION_API_KEYS` aceita uma lista separada por virgula para facilitar rotacao de chave.
@@ -67,7 +70,7 @@ Authorization: Bearer dev-recognition-key
 ou:
 
 ```http
-X-API-Key: dev-recognition-key
+X-API-Key: replace-with-a-long-random-key
 ```
 
 ## Endpoints
@@ -253,14 +256,14 @@ O endpoint legado `POST /facial` tambem existe para compatibilidade, protegido p
 ## Camera Local
 
 ```bash
-set RECOGNITION_API_KEYS=dev-recognition-key
+set RECOGNITION_API_KEYS=replace-with-a-long-random-key
 python camera_recognition.py
 ```
 
 No PowerShell:
 
 ```powershell
-$env:RECOGNITION_API_KEYS = "dev-recognition-key"
+$env:RECOGNITION_API_KEYS = "replace-with-a-long-random-key"
 python camera_recognition.py
 ```
 
@@ -272,7 +275,7 @@ Configure:
 
 ```env
 SAAS_PRESENCE_WEBHOOK_URL=http://host.docker.internal:8000/api/recognition/presences
-SAAS_WEBHOOK_SECRET=webhook-secret
+SAAS_WEBHOOK_SECRET=replace-with-a-different-long-random-secret
 SCHOOL_ID=escola_1
 CAMERA_ID=entrada_principal
 PRESENCE_DEDUP_WINDOW_SECONDS=300

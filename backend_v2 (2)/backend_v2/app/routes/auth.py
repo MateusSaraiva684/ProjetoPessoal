@@ -36,6 +36,19 @@ def get_current_user(
     return auth_service.get_current_user_from_token(credentials.credentials)
 
 
+def require_roles(*roles: str):
+    def dependency(user: Usuario = Depends(get_current_user)) -> Usuario:
+        if user.role not in roles and not (user.is_superuser and "superadmin" in roles):
+            raise UnauthorizedError("Permissao insuficiente")
+        return user
+
+    return dependency
+
+
+require_admin = require_roles("superadmin", "gestor")
+require_operator = require_roles("superadmin", "gestor", "operator")
+
+
 def _set_refresh_cookie(response: Response, token: str) -> None:
     response.set_cookie(
         key="refresh_token",
@@ -129,11 +142,9 @@ def me(user: Usuario = Depends(get_current_user)):
 
 @router.post("/mfa/setup")
 def mfa_setup(
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_admin),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    if not user.is_superuser:
-        raise UnauthorizedError("MFA disponível apenas para administradores")
     url = auth_service.iniciar_mfa(user)
     registrar_auditoria(
         auth_service.db,
@@ -150,11 +161,9 @@ def mfa_setup(
 @router.post("/mfa/confirm")
 def mfa_confirm(
     body: dict,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_admin),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    if not user.is_superuser:
-        raise UnauthorizedError("MFA disponível apenas para administradores")
     auth_service.confirmar_mfa(user, str(body.get("code", "")))
     registrar_auditoria(
         auth_service.db,

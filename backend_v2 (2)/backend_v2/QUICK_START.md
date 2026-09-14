@@ -112,7 +112,7 @@ CELERY_RESULT_BACKEND=redis://default:pass@host:port/1
 
 ```bash
 # Verificar status
-curl https://seu-app.run.northflank.io/health
+curl https://seu-app.run.northflank.io/api/health
 
 # Acessar API docs
 # https://seu-app.run.northflank.io/docs

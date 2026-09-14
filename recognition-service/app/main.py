@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from redis import Redis
 from redis.exceptions import RedisError
 
-from app.core.config import CAMERA_ID, CORS_ORIGINS, REDIS_URL, SAAS_PRESENCE_WEBHOOK_URL, SCHOOL_ID
+from app.core.config import APP_VERSION, CAMERA_ID, CORS_ORIGINS, GIT_COMMIT, REDIS_URL, SAAS_PRESENCE_WEBHOOK_URL, SCHOOL_ID
 from app.core.database import check_database_connection
 from app.routes import diagnostics, operations, recognize, register
 from app.services.face_service import is_model_loaded
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Recognition Service",
     description="Servico interno de reconhecimento facial com API REST",
-    version="1.0.0",
+    version=APP_VERSION,
 )
 
 app.add_middleware(
@@ -79,6 +79,8 @@ def _build_health_response():
             "school_id": SCHOOL_ID,
             "camera_id": CAMERA_ID,
             "webhook_configured": bool(SAAS_PRESENCE_WEBHOOK_URL),
+            "version": APP_VERSION,
+            "commit": GIT_COMMIT,
         },
     )
 

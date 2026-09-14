@@ -7,7 +7,7 @@
 ```
 backend_v2/
 ├── 🐳 Dockerfile                    [Nova] Multi-stage, otimizado
-├── 🐳 Dockerfile.celery             [Nova] Para Celery workers (opcional)
+├── 🐳 Dockerfile.celery             [Nova] Worker Celery obrigatorio em production
 ├── 🚫 .dockerignore                 [Nova] Otimização de build
 ├── ⚙️ northflank.yaml               [Nova] Config Northflank (referência)
 ├── 📖 MIGRACAO_NORTHFLANK.md        [Nova] Guia completo em 7 fases

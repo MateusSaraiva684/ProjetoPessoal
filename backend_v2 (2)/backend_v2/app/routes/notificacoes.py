@@ -5,7 +5,7 @@ from app.core.exceptions import BadRequestError, NotFoundError
 from app.database.session import get_db
 from app.models.models import Usuario
 from app.repositories.notification_repository import NotificationOutboxRepository
-from app.routes.auth import get_current_user
+from app.routes.auth import require_operator
 from app.schemas.schemas import NotificationOutboxResponse
 from app.services.notification_service import NotificationService
 
@@ -17,7 +17,7 @@ def listar_notificacoes(
     status: str | None = Query(None),
     limit: int = Query(100, ge=1, le=200),
     page: int = Query(1, ge=1),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     db: Session = Depends(get_db),
 ):
     repo = NotificationOutboxRepository(db)
@@ -33,7 +33,7 @@ def listar_notificacoes(
 @router.post("/{notification_id}/retry", response_model=NotificationOutboxResponse)
 def reenviar_notificacao(
     notification_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     db: Session = Depends(get_db),
 ):
     repo = NotificationOutboxRepository(db)

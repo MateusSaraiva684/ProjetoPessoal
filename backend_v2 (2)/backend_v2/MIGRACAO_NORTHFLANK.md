@@ -216,7 +216,7 @@ psql -h <northflank-host> -U <user> -d <dbname> < backup.sql
 - [ ] Banco de dados migrado
 - [ ] Migrations rodadas com sucesso
 - [ ] Admin criado/sincronizado
-- [ ] API responde em `/health`
+- [ ] API responde em `/api/health`
 - [ ] Frontend consegue conectar na API
 - [ ] Logs sem erros críticos
 

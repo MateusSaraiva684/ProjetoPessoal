@@ -98,30 +98,27 @@ export default function Presencas() {
     }
   }
 
-  async function handleRegistrar(tipo) {
-    if (!alunoId) {
-      setErro('Selecione um aluno.')
-      return
+  async function carregarRelatorio() {
+    setCarregandoRelatorio(true)
+    setErro('')
+    try {
+      const params = {}
+      if (alunoId) params.aluno_id = alunoId
+      if (inicio) params.inicio = `${inicio}T00:00:00Z`
+      if (fim) params.fim = `${fim}T23:59:59Z`
+      if (camera.trim()) params.camera_id = camera.trim()
+      const { data } = await api.get('/api/presencas', { params })
+      setRelatorio(data || [])
+    } catch (err) {
+      setErro(err.response?.data?.erro || err.response?.data?.detail || 'Nao foi possivel carregar o relatorio.')
+    } finally {
+      setCarregandoRelatorio(false)
     }
+  }
 
-    async function carregarRelatorio() {
-      setCarregandoRelatorio(true)
-      try {
-        const params = {}
-        if (alunoId) params.aluno_id = alunoId
-        if (inicio) params.inicio = `${inicio}T00:00:00Z`
-        if (fim) params.fim = `${fim}T23:59:59Z`
-        if (camera.trim()) params.camera_id = camera.trim()
-        const { data } = await api.get('/api/presencas', { params })
-        setRelatorio(data || [])
-      } catch (err) {
-        setErro(err.response?.data?.erro || 'Nao foi possivel carregar o relatorio.')
-      } finally {
-        setCarregandoRelatorio(false)
-      }
-    }
-
-    async function exportarCsv() {
+  async function exportarCsv() {
+    setErro('')
+    try {
       const params = {}
       if (alunoId) params.aluno_id = alunoId
       if (inicio) params.inicio = `${inicio}T00:00:00Z`
@@ -134,6 +131,15 @@ export default function Presencas() {
       link.download = 'presencas.csv'
       link.click()
       URL.revokeObjectURL(url)
+    } catch (err) {
+      setErro(err.response?.data?.erro || err.response?.data?.detail || 'Nao foi possivel exportar o relatorio.')
+    }
+  }
+
+  async function handleRegistrar(tipo) {
+    if (!alunoId) {
+      setErro('Selecione um aluno.')
+      return
     }
 
     setRegistrando(true)

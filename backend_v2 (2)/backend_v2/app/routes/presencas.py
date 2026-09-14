@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.core.exceptions import BadRequestError, ServiceUnavailableError, UnauthorizedError
 from app.database.session import get_db
 from app.models.models import Presenca, Usuario
-from app.routes.auth import get_current_user
+from app.routes.auth import require_operator
 from app.schemas.schemas import (
     PresencaCreate,
     PresencaManualCreate,
@@ -137,7 +137,7 @@ async def registrar_presence_recognition(
 @router.post("/manual", response_model=PresencaResponse, status_code=201)
 def registrar_manual(
     body: PresencaManualCreate,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     return service.registrar_manual(body, user)
@@ -146,7 +146,7 @@ def registrar_manual(
 @router.post("/entrada", response_model=PresencaResponse, status_code=201)
 def registrar_entrada(
     body: PresencaCreate,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     return service.registrar_entrada_saida(body, user, "entrada")
@@ -155,7 +155,7 @@ def registrar_entrada(
 @router.post("/saida", response_model=PresencaResponse, status_code=201)
 def registrar_saida(
     body: PresencaCreate,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     return service.registrar_entrada_saida(body, user, "saida")
@@ -164,7 +164,7 @@ def registrar_saida(
 @router.get("/aluno/{aluno_id}", response_model=List[PresencaResponse])
 def listar_por_aluno(
     aluno_id: int,
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     return service.listar_por_aluno(aluno_id, user)
@@ -193,7 +193,7 @@ def listar_relatorio(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),
     filtros: dict = Depends(_report_filters),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     registros, _ = service.listar_relatorio(user, skip=(page - 1) * limit, limit=limit, **filtros)
@@ -203,7 +203,7 @@ def listar_relatorio(
 @router.get("/export.csv")
 def exportar_relatorio_csv(
     filtros: dict = Depends(_report_filters),
-    user: Usuario = Depends(get_current_user),
+    user: Usuario = Depends(require_operator),
     service: PresencaService = Depends(get_presenca_service),
 ):
     registros, _ = service.listar_relatorio(user, skip=0, limit=10000, **filtros)
