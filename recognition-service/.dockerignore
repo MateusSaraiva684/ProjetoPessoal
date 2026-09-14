@@ -1,0 +1,16 @@
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.tmp/
+.git
+.gitignore
+.gitlab-ci.yml
+Dockerfile
+.dockerignore
+.env
+.env.*
+*.log
+venv/
+venv3/
+.env.local
+.pytest_cache/

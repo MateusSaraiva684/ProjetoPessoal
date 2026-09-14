@@ -1,0 +1,70 @@
+# Configuração Northflank para Backend FastAPI
+# Salve este arquivo como northflank.yaml na raiz do projeto
+
+services:
+  - name: backend
+    type: docker
+    buildCommand: docker build -t backend .
+    ports:
+      - port: 8000
+        name: http
+        public: true
+    environmentVariables:
+      - name: ENVIRONMENT
+        value: production
+      - name: TRUST_PROXY_HEADERS
+        value: "true"
+      - name: PORT
+        value: "8000"
+    
+    # Secrets (configurar no dashboard do Northflank)
+    secrets:
+      - name: DATABASE_URL
+      - name: SECRET_KEY
+      - name: ADMIN_EMAIL
+      - name: ADMIN_PASSWORD
+      - name: ADMIN_SECRET_KEY
+      - name: FRONTEND_URL
+      - name: CLOUDINARY_CLOUD_NAME
+      - name: CLOUDINARY_API_KEY
+      - name: CLOUDINARY_API_SECRET
+      - name: FACE_RECOGNITION_SERVICE_URL
+      - name: REDIS_URL
+      - name: CELERY_BROKER_URL
+      - name: CELERY_RESULT_BACKEND
+
+    # Volumes (se necessário)
+    volumes:
+      - name: uploads
+        mountPath: /app/uploads
+        size: 10Gi
+
+    # Restart policy
+    restartPolicy: always
+
+  # Serviço Celery Worker (opcional, se usar background tasks)
+  - name: celery-worker
+    type: docker
+    buildCommand: docker build -t celery-worker -f Dockerfile.celery .
+    environmentVariables:
+      - name: ENVIRONMENT
+        value: production
+    secrets:
+      - name: REDIS_URL
+      - name: DATABASE_URL
+      - name: CELERY_BROKER_URL
+      - name: CELERY_RESULT_BACKEND
+    restartPolicy: always
+
+databases:
+  - name: postgresql
+    type: postgresql
+    version: "15"
+    # Será criado automaticamente
+    # Configure a conexão em DATABASE_URL
+
+  - name: redis
+    type: redis
+    version: "7"
+    # Será criado automaticamente
+    # Configure a conexão em REDIS_URL

@@ -1,0 +1,28 @@
+# Dockerfile para Celery Worker (opcional)
+# Use este arquivo apenas se precisar de workers assíncronos
+
+FROM python:3.11-slim as builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+FROM python:3.11-slim
+
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+COPY . .
+
+# Celery worker não expõe porta HTTP
+# Apenas se conecta ao Redis/RabbitMQ
+
+CMD ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-c", "4"]
