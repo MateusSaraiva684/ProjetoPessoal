@@ -154,7 +154,7 @@ Nesta análise, a compilação sintática Python passou. A execução de `pytest
 
 ## Fontes no código
 
-- Backend: `backend_v2 (2)/backend_v2/main.py`, `app/routes`, `app/services`, `app/repositories` e `app/tests`.
+- Backend: `backend_v2/main.py`, `app/routes`, `app/services`, `app/repositories` e `app/tests`.
 - Frontend: `frontend_v2/src/App.jsx`, `src/services`, `src/pages` e `package.json`.
 - Recognition-service: `recognition-service/app/main.py`, `app/queue`, `app/services`, `app/core` e `tests`.
-- E2E: `backend_v2 (2)/backend_v2/docs/E2E_RECOGNITION_FLOW.md`.
+- E2E: `backend_v2/docs/E2E_RECOGNITION_FLOW.md`.

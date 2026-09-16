@@ -55,7 +55,7 @@ Faça logout/login após adicionar o usuário ao grupo `docker`. Até lá, os co
 Crie o ambiente Python do backend:
 
 ```bash
-cd "/home/mateus/Área de trabalho/SaaS/backend_v2 (2)/backend_v2"
+cd "/home/mateus/Área de trabalho/SaaS/backend_v2"
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -181,7 +181,7 @@ Acesse `http://localhost:5173`. O `package.json` define `dev`, `build` e `previe
 ### Backend
 
 ```bash
-cd "/home/mateus/Área de trabalho/SaaS/backend_v2 (2)/backend_v2"
+cd "/home/mateus/Área de trabalho/SaaS/backend_v2"
 source .venv/bin/activate
 pytest -q
 ```
@@ -214,7 +214,7 @@ Não há testes automatizados configurados no frontend.
 
 ### E2E entre os serviços
 
-Com backend, frontend opcional, recognition-service, bancos, Redis e worker ativos, siga [E2E_RECOGNITION_FLOW.md](../backend_v2%20%282%29/backend_v2/docs/E2E_RECOGNITION_FLOW.md). O E2E precisa de credenciais de teste, imagens reais e Cloudinary quando o fluxo usar `photo_url`.
+Com backend, frontend opcional, recognition-service, bancos, Redis e worker ativos, siga [E2E_RECOGNITION_FLOW.md](../backend_v2/docs/E2E_RECOGNITION_FLOW.md). O E2E precisa de credenciais de teste, imagens reais e Cloudinary quando o fluxo usar `photo_url`.
 
 ## 6. Ordem recomendada de inicialização
 

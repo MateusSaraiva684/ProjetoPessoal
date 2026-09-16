@@ -4,7 +4,7 @@
 **Tempo total:** 30 minutos  
 **Última atualização:** 08/09/2026
 
-> **Escopo atual:** este guia cobre backend e frontend. O reconhecimento facial é um terceiro serviço; consulte [07_STATUS_ATUAL_2026.md](07_STATUS_ATUAL_2026.md) e [E2E_RECOGNITION_FLOW.md](../backend_v2%20%282%29/backend_v2/docs/E2E_RECOGNITION_FLOW.md) para a integração.
+> **Escopo atual:** este guia cobre backend e frontend. O reconhecimento facial é um terceiro serviço; consulte [07_STATUS_ATUAL_2026.md](07_STATUS_ATUAL_2026.md) e [E2E_RECOGNITION_FLOW.md](../backend_v2/docs/E2E_RECOGNITION_FLOW.md) para a integração.
 
 ---
 
@@ -49,7 +49,7 @@ cd ~/projetos  # ou seu diretório preferido
 
 # Clonar repositório
 git clone https://github.com/seu-usuario/backend_v2.git
-cd "backend_v2 (2)/backend_v2"
+cd backend_v2
 
 # Verificar branch
 git branch -a
