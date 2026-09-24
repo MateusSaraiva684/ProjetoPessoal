@@ -1,8 +1,0 @@
-/dashboard    /index.html   200
-/alunos       /index.html   200
-/alunos/*     /index.html   200
-/presencas    /index.html   200
-/reconhecimento /index.html 200
-/admin        /index.html   200
-/admin/*      /index.html   200
-/*            /index.html   200
