@@ -199,16 +199,22 @@ def health():
         if settings.is_production:
             http_status = status.HTTP_503_SERVICE_UNAVAILABLE
     else:
-        redis = Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2, socket_timeout=2)
         try:
-            redis.ping()
-        except RedisError:
-            logger.exception("Healthcheck do Redis falhou")
+            redis = Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2, socket_timeout=2)
+            try:
+                redis.ping()
+            except RedisError:
+                logger.exception("Healthcheck do Redis falhou")
+                checks["redis"] = "error"
+                if settings.is_production:
+                    http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+            finally:
+                redis.close()
+        except (TypeError, ValueError):
+            logger.exception("REDIS_URL invalida no healthcheck")
             checks["redis"] = "error"
             if settings.is_production:
                 http_status = status.HTTP_503_SERVICE_UNAVAILABLE
-        finally:
-            redis.close()
 
     if celery_app is None:
         checks["worker"] = "not_configured"

@@ -102,6 +102,24 @@ def _derive_face_recognition_service_url(
     return f"{service_base_url}/api/recognize/sync"
 
 
+def normalize_redis_url(value: str | None) -> str:
+    """Normaliza URLs do Redis para aceitar valores sem o prefixo redis://."""
+    if value is None:
+        return ""
+
+    value = value.strip()
+    if not value:
+        return ""
+
+    if "://" in value:
+        return value
+
+    if value.startswith("//"):
+        return f"redis:{value}"
+
+    return f"redis://{value}"
+
+
 class Settings:
     APP_VERSION: str = os.getenv("APP_VERSION", "2.0.0")
     GIT_COMMIT: str = os.getenv("GIT_COMMIT", "unknown")
@@ -143,9 +161,9 @@ class Settings:
     NOTIFICATION_MAX_ATTEMPTS: int = _env_int("NOTIFICATION_MAX_ATTEMPTS", 3)
     NOTIFICATION_RETRY_SECONDS: int = _env_int("NOTIFICATION_RETRY_SECONDS", 60)
 
-    REDIS_URL: str = os.getenv("REDIS_URL", "")
-    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "")
-    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "")
+    REDIS_URL: str = normalize_redis_url(os.getenv("REDIS_URL", ""))
+    CELERY_BROKER_URL: str = normalize_redis_url(os.getenv("CELERY_BROKER_URL", ""))
+    CELERY_RESULT_BACKEND: str = normalize_redis_url(os.getenv("CELERY_RESULT_BACKEND", ""))
     CELERY_WORKER_REQUIRED: bool = _env_flag("CELERY_WORKER_REQUIRED", True)
     TRUST_PROXY_HEADERS: bool = _env_flag("TRUST_PROXY_HEADERS", False)
     SENTRY_DSN: str = os.getenv("SENTRY_DSN", "").strip()
