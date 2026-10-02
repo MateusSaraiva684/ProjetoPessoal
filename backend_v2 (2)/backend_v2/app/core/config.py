@@ -146,6 +146,7 @@ class Settings:
     REDIS_URL: str = os.getenv("REDIS_URL", "")
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "")
     CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "")
+    CELERY_WORKER_REQUIRED: bool = _env_flag("CELERY_WORKER_REQUIRED", True)
     TRUST_PROXY_HEADERS: bool = _env_flag("TRUST_PROXY_HEADERS", False)
     SENTRY_DSN: str = os.getenv("SENTRY_DSN", "").strip()
     SENTRY_TRACES_SAMPLE_RATE: float = _env_float("SENTRY_TRACES_SAMPLE_RATE", 0.0)

@@ -212,19 +212,19 @@ def health():
 
     if celery_app is None:
         checks["worker"] = "not_configured"
-        if settings.is_production:
+        if settings.is_production and settings.CELERY_WORKER_REQUIRED:
             http_status = status.HTTP_503_SERVICE_UNAVAILABLE
     else:
         try:
             workers = celery_app.control.inspect(timeout=1).ping() or {}
             if not workers:
                 checks["worker"] = "unavailable"
-                if settings.is_production:
+                if settings.is_production and settings.CELERY_WORKER_REQUIRED:
                     http_status = status.HTTP_503_SERVICE_UNAVAILABLE
         except Exception:
             logger.exception("Healthcheck do worker falhou")
             checks["worker"] = "error"
-            if settings.is_production:
+            if settings.is_production and settings.CELERY_WORKER_REQUIRED:
                 http_status = status.HTTP_503_SERVICE_UNAVAILABLE
 
     return JSONResponse(

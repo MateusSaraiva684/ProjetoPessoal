@@ -1,8 +1,8 @@
 # URLs oficiais dos serviços
 
 Estas são as URLs públicas e internas que devem ser usadas em produção.
-Substitua os domínios de exemplo pelos domínios atribuídos ao projeto
-Northflank e mantenha os valores também no secret manager.
+Substitua os domínios de exemplo pelos domínios atribuídos pelo Render e
+mantenha os valores também no secret manager.
 
 | Serviço | URL oficial | Uso |
 |---|---|---|
@@ -14,9 +14,9 @@ Northflank e mantenha os valores também no secret manager.
 
 ## Endpoints internos
 
-Quando os serviços estiverem na mesma rede privada do Northflank, prefira os
-hostnames privados fornecidos pela plataforma para `RECOGNITION_SERVICE_URL`,
-`DATABASE_URL` e `REDIS_URL`. Não exponha PostgreSQL ou Redis publicamente.
+Use a URL interna do Render para o PostgreSQL quando o backend estiver no
+mesmo workspace. Para Redis externo, use uma URL TLS e não exponha o serviço
+publicamente.
 
 ## Regras de configuração
 

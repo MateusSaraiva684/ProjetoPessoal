@@ -88,4 +88,3 @@ poetry.lock
 
 # Render/Platform specific
 render.yaml
-northflank.yaml
