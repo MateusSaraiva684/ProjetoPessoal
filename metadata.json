@@ -1,0 +1,8 @@
+{
+  "name": "Sistema Escolar",
+  "description": "Sistema de gestão escolar com controle de presença, reconhecimento facial e notificações.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
