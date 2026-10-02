@@ -1,0 +1,40 @@
+
+# Backend - Render
+ENVIRONMENT=production
+TRUST_PROXY_HEADERS=true
+CELERY_WORKER_REQUIRED=false
+
+DATABASE_URL=postgresql://usuario:senha@host-do-render:5432/escola
+REDIS_URL=redis://default:senha@host-do-render:6379
+CELERY_BROKER_URL=redis://default:senha@host-do-render:6379
+CELERY_RESULT_BACKEND=redis://default:senha@host-do-render:6379
+
+SECRET_KEY=gerar_com_python_32_chars_ou_mais
+ADMIN_EMAIL=admin@admin.com
+ADMIN_PASSWORD=SenhaForte123!
+FRONTEND_URL=https://frontend-seu-projeto.onrender.com
+
+CLOUDINARY_CLOUD_NAME=seu-cloud-name
+CLOUDINARY_API_KEY=sua-api-key
+CLOUDINARY_API_SECRET=sua-api-secret
+
+# Lembrar: reconhecimento fora do deploy por enquanto
+RECOGNITION_SERVICE_URL=
+FACE_RECOGNITION_SERVICE_URL=
+RECOGNITION_API_BASE_URL=
+RECOGNITION_API_TOKEN=
+RECOGNITION_WEBHOOK_SECRET=
+
+# Opcional
+SENTRY_DSN=
+SENTRY_TRACES_SAMPLE_RATE=0
+NOTIFICATION_PROVIDER=log
+SYNC_ADMIN_PASSWORD_ON_STARTUP=false
+
+# Frontend - Render
+VITE_API_URL=https://backend-seu-projeto.onrender.com
+VITE_SENTRY_DSN=
+VITE_SENTRY_TRACES_SAMPLE_RATE=0
+
+# Para gerar uma SECRET_KEY segura
+# python3 -c "import secrets; print(secrets.token_urlsafe(32))"
