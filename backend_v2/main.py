@@ -1,5 +1,6 @@
 import os
 import logging
+import secrets
 try:
     import sentry_sdk
 except ImportError:  # Sentry é opcional em ambientes locais.
@@ -59,9 +60,24 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Recognition-Token"],
 )
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=()"
+    if settings.is_production:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    if request.url.path.startswith("/api/auth/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 app.middleware("http")(request_logging_middleware)
 app.middleware("http")(rate_limit_middleware)
@@ -108,14 +124,17 @@ def startup():
     """Inicializa a aplicacao e sincroniza o admin automaticamente."""
     logger.info("Aplicacao iniciada - ambiente: %s", settings.ENVIRONMENT)
     
-    if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
-        raise RuntimeError("ADMIN_EMAIL e ADMIN_PASSWORD sao obrigatorios para iniciar o backend.")
+    if not settings.ADMIN_EMAIL:
+        raise RuntimeError("ADMIN_EMAIL e obrigatorio para iniciar o backend.")
+    if settings.AUTH_PROVIDER == "local" and not settings.ADMIN_PASSWORD:
+        raise RuntimeError("ADMIN_PASSWORD e obrigatorio para AUTH_PROVIDER=local.")
 
     from sqlalchemy.orm import Session as DBSession
     from app.database.session import SessionLocal
     from app.models.models import Usuario as UsuarioModel
     from app.core.security import hash_senha, verificar_senha
 
+    admin_password = settings.ADMIN_PASSWORD or secrets.token_urlsafe(32)
     db: DBSession = SessionLocal()
     try:
         admin_user = db.query(UsuarioModel).filter(
@@ -127,7 +146,7 @@ def startup():
             admin_user = UsuarioModel(
                 nome="Administrador",
                 email=settings.ADMIN_EMAIL,
-                senha=hash_senha(settings.ADMIN_PASSWORD),
+                senha=hash_senha(admin_password),
                 is_superuser=True,
                 role="superadmin",
                 ativo=True,
@@ -155,16 +174,17 @@ def startup():
                 admin_user.ativo = True
                 mudou = True
             
-            senha_sincronizada = verificar_senha(settings.ADMIN_PASSWORD, admin_user.senha)
-            if not senha_sincronizada:
-                if settings.sync_admin_password_on_startup:
-                    logger.debug("Sincronizando senha com .env")
-                    admin_user.senha = hash_senha(settings.ADMIN_PASSWORD)
-                    mudou = True
-                else:
-                    logger.warning(
-                        "Senha do admin difere de ADMIN_PASSWORD; sincronizacao automatica desabilitada"
-                    )
+            if settings.AUTH_PROVIDER == "local":
+                senha_sincronizada = verificar_senha(settings.ADMIN_PASSWORD, admin_user.senha)
+                if not senha_sincronizada:
+                    if settings.sync_admin_password_on_startup:
+                        logger.debug("Sincronizando senha com .env")
+                        admin_user.senha = hash_senha(settings.ADMIN_PASSWORD)
+                        mudou = True
+                    else:
+                        logger.warning(
+                            "Senha do admin difere de ADMIN_PASSWORD; sincronizacao automatica desabilitada"
+                        )
             
             if mudou:
                 db.flush()

@@ -103,6 +103,8 @@ class AdminService:
         usuario = self._buscar_usuario(usuario_id)
         if usuario.is_superuser and usuario.id != admin.id:
             raise ForbiddenError("Nao e possivel editar outro superusuario")
+        if usuario.id == admin.id and body.role is not None and body.role != "superadmin":
+            raise ForbiddenError("O administrador nao pode remover o proprio acesso")
         if body.role is not None and admin.role != "superadmin":
             raise ForbiddenError("Somente superadmin pode alterar papeis")
         if body.role == "superadmin" and not usuario.is_superuser:
@@ -153,6 +155,10 @@ class AdminService:
         usuario = self._buscar_usuario(usuario_id)
         if usuario.is_superuser and usuario.id != admin.id:
             raise ForbiddenError("Nao e possivel redefinir senha de outro superusuario")
+        if usuario.is_superuser and settings.AUTH_PROVIDER == "local":
+            raise ForbiddenError(
+                "Altere ADMIN_PASSWORD nas variaveis do Render e faca um novo deploy"
+            )
         usuario.senha = hash_senha(body.nova_senha)
         self.db.commit()
         registrar_auditoria(

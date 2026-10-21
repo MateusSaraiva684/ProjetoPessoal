@@ -14,6 +14,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database.session import Base, get_db
+from app.core.config import settings
+from app.core.security import hash_senha
+from app.models.models import Usuario
 from main import app
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
@@ -34,6 +37,17 @@ def override_get_db():
 def setup_db():
     Base.metadata.create_all(bind=engine_test)
     app.dependency_overrides[get_db] = override_get_db
+    db = SessionTest()
+    db.add(Usuario(
+        nome="Administrador",
+        email=settings.ADMIN_EMAIL,
+        senha=hash_senha(settings.ADMIN_PASSWORD),
+        ativo=True,
+        is_superuser=True,
+        role="superadmin",
+    ))
+    db.commit()
+    db.close()
     yield
     Base.metadata.drop_all(bind=engine_test)
     app.dependency_overrides.clear()

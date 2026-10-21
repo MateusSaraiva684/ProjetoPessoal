@@ -130,6 +130,9 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    AUTH_PROVIDER: str = os.getenv("AUTH_PROVIDER", "local").strip().lower()
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "").rstrip("/")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
 
     # Credenciais do painel admin (definidas nas variáveis de ambiente)
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
@@ -179,8 +182,12 @@ class Settings:
         return self.ENVIRONMENT == "production"
 
     @property
+    def supabase_auth_enabled(self) -> bool:
+        return self.AUTH_PROVIDER == "supabase"
+
+    @property
     def sync_admin_password_on_startup(self) -> bool:
-        return _env_flag("SYNC_ADMIN_PASSWORD_ON_STARTUP", not self.is_production)
+        return _env_flag("SYNC_ADMIN_PASSWORD_ON_STARTUP", self.AUTH_PROVIDER == "local")
 
 
 settings = Settings()
@@ -190,8 +197,14 @@ if settings.ENVIRONMENT not in ("testing",):
         raise RuntimeError("SECRET_KEY não definida nas variáveis de ambiente.")
     if not settings.DATABASE_URL:
         raise RuntimeError("DATABASE_URL não definida nas variáveis de ambiente.")
-    if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
-        raise RuntimeError("ADMIN_EMAIL e ADMIN_PASSWORD não definidos nas variáveis de ambiente.")
+    if not settings.ADMIN_EMAIL:
+        raise RuntimeError("ADMIN_EMAIL não definido nas variáveis de ambiente.")
+    if settings.AUTH_PROVIDER == "local" and not settings.ADMIN_PASSWORD:
+        raise RuntimeError("ADMIN_PASSWORD não definido para AUTH_PROVIDER=local.")
+    if settings.AUTH_PROVIDER == "local" and settings.is_production and len(settings.ADMIN_PASSWORD) < 12:
+        raise RuntimeError("ADMIN_PASSWORD deve ter pelo menos 12 caracteres em production.")
+    if settings.AUTH_PROVIDER not in ("local", "supabase"):
+        raise RuntimeError("AUTH_PROVIDER deve ser 'local' ou 'supabase'.")
     if settings.is_production and not settings.REDIS_URL:
         raise RuntimeError("REDIS_URL não definida nas variáveis de ambiente em production.")
     if settings.is_production and len(settings.SECRET_KEY) < 32:

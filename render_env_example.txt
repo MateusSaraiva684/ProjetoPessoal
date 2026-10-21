@@ -4,7 +4,8 @@ ENVIRONMENT=production
 TRUST_PROXY_HEADERS=true
 CELERY_WORKER_REQUIRED=false
 
-DATABASE_URL=postgresql://usuario:senha@host-do-render:5432/escola
+# PostgreSQL principal do Supabase (use a conexão Session Pooler)
+DATABASE_URL=postgresql://postgres.PROJECT_REF:SENHA@aws-0-REGIAO.pooler.supabase.com:5432/postgres
 REDIS_URL=redis://default:senha@host-do-render:6379
 CELERY_BROKER_URL=redis://default:senha@host-do-render:6379
 CELERY_RESULT_BACKEND=redis://default:senha@host-do-render:6379
@@ -12,7 +13,11 @@ CELERY_RESULT_BACKEND=redis://default:senha@host-do-render:6379
 SECRET_KEY=gerar_com_python_32_chars_ou_mais
 ADMIN_EMAIL=admin@admin.com
 ADMIN_PASSWORD=SenhaForte123!
+SYNC_ADMIN_PASSWORD_ON_STARTUP=true
 FRONTEND_URL=https://frontend-seu-projeto.onrender.com
+AUTH_PROVIDER=local
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_ANON_KEY=sua-chave-anon-publica
 
 CLOUDINARY_CLOUD_NAME=seu-cloud-name
 CLOUDINARY_API_KEY=sua-api-key
@@ -33,6 +38,9 @@ SYNC_ADMIN_PASSWORD_ON_STARTUP=false
 
 # Frontend - Render
 VITE_API_URL=https://backend-seu-projeto.onrender.com
+VITE_AUTH_PROVIDER=local
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anon-publica
 VITE_SENTRY_DSN=
 VITE_SENTRY_TRACES_SAMPLE_RATE=0
 

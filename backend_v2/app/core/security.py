@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import secrets
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -24,6 +26,10 @@ def criar_access_token(user_id: int) -> str:
 
 def criar_refresh_token() -> str:
     return secrets.token_hex(32)
+
+
+def hash_refresh_token(token: str) -> str:
+    return hmac.new(settings.SECRET_KEY.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def decodificar_access_token(token: str) -> dict:

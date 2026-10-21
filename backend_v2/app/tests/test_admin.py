@@ -157,6 +157,13 @@ def test_admin_nao_pode_desativar_ou_trocar_email_do_proprio_perfil(client):
     )
     assert trocar_email.status_code == 403
 
+    trocar_role = client.patch(
+        f"/api/admin/usuarios/{admin_id}",
+        headers=headers(admin_token),
+        json={"role": "operator"},
+    )
+    assert trocar_role.status_code == 403
+
 
 def test_admin_auditoria_registra_alteracao_sensivel(client):
     admin_token = login_admin(client)
@@ -176,3 +183,17 @@ def test_admin_auditoria_registra_alteracao_sensivel(client):
         and item["resource_id"] == str(user_id)
         for item in logs.json()
     )
+
+
+def test_admin_nao_redefine_senha_do_superadmin_no_modo_local(client):
+    admin_token = login_admin(client)
+    admin_id = client.get("/api/auth/me", headers=headers(admin_token)).json()["id"]
+
+    response = client.patch(
+        f"/api/admin/usuarios/{admin_id}/senha",
+        headers=headers(admin_token),
+        json={"nova_senha": "nova-senha-123"},
+    )
+
+    assert response.status_code == 403
+    assert "ADMIN_PASSWORD" in response.json()["erro"]

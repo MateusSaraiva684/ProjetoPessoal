@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,7 @@ from app.schemas.schemas import (
     Mensagem,
     RefreshRequest,
     RegistrarRequest,
+    SupabaseAuthRequest,
     TokenResponse,
     UsuarioResponse,
 )
@@ -70,6 +71,16 @@ def _delete_refresh_cookie(response: Response) -> None:
     )
 
 
+def _validate_cookie_origin(request: Request) -> None:
+    origin = request.headers.get("origin")
+    if not origin:
+        return
+
+    allowed_origin = settings.FRONTEND_URL.rstrip("/")
+    if not allowed_origin or origin.rstrip("/") != allowed_origin:
+        raise UnauthorizedError("Origem da requisicao nao autorizada")
+
+
 def _token_response(bundle: TokenBundle, response: Response) -> dict:
     _set_refresh_cookie(response, bundle.refresh_token)
     return {
@@ -102,8 +113,21 @@ def login(
     return _token_response(auth_service.emitir_tokens(user), response)
 
 
+@router.post("/supabase", response_model=TokenResponse)
+def login_supabase(
+    body: SupabaseAuthRequest,
+    response: Response,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    if not settings.supabase_auth_enabled:
+        raise UnauthorizedError("Autenticacao Supabase desativada")
+    user = auth_service.autenticar_supabase(body.access_token)
+    return _token_response(auth_service.emitir_tokens(user), response)
+
+
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(
+    request: Request,
     response: Response,
     cookie_token: Optional[str] = Cookie(default=None, alias="refresh_token"),
     body: Optional[RefreshRequest] = None,
@@ -115,6 +139,9 @@ def refresh(
     - Cookie: refresh_token
     - Body JSON: {"refresh_token": "..."}
     """
+    if cookie_token:
+        _validate_cookie_origin(request)
+
     token = cookie_token or (body.refresh_token if body else None)
     
     if not token:
@@ -125,11 +152,14 @@ def refresh(
 
 @router.post("/logout", response_model=Mensagem)
 def logout(
+    request: Request,
     response: Response,
     user: Usuario = Depends(get_current_user),
     cookie_token: Optional[str] = Cookie(default=None, alias="refresh_token"),
     auth_service: AuthService = Depends(get_auth_service),
 ):
+    if cookie_token:
+        _validate_cookie_origin(request)
     auth_service.revogar_refresh_token(cookie_token)
     _delete_refresh_cookie(response)
     return {"mensagem": "Logout realizado com sucesso"}

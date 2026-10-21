@@ -89,3 +89,22 @@ def test_refresh_token(client):
     resp = client.post("/api/auth/refresh", cookies={"refresh_token": refresh_token})
     assert resp.status_code == 200
     assert "access_token" in resp.json()
+
+
+def test_refresh_cookie_rejeita_origem_desconhecida(client, monkeypatch):
+    monkeypatch.setattr("app.routes.auth.settings.FRONTEND_URL", "https://frontend.example.com")
+    client.post("/api/auth/registrar", json={
+        "nome": "João", "email": "csrf@email.com", "senha": "senha123"
+    })
+    login_resp = client.post("/api/auth/login", json={
+        "email": "csrf@email.com", "senha": "senha123"
+    })
+    refresh_token = login_resp.cookies.get("refresh_token")
+
+    resp = client.post(
+        "/api/auth/refresh",
+        cookies={"refresh_token": refresh_token},
+        headers={"Origin": "https://atacante.example.com"},
+    )
+
+    assert resp.status_code == 401

@@ -36,6 +36,10 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class SupabaseAuthRequest(BaseModel):
+    access_token: str = Field(..., min_length=20, max_length=4096)
+
+
 class UsuarioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,6 +1,7 @@
 """Middleware de Rate Limiting para proteção de brute force."""
 
 import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -57,12 +58,30 @@ async def rate_limit_middleware(request: Request, call_next):
         return await call_next(request)
 
     try:
-        allowed, remaining, retry_after = await check_rate_limit(
+        limits = [await check_rate_limit(
             ip=client_ip,
             endpoint="/api/auth/login",
             max_requests=settings.LOGIN_MAX_FAILURES,
             window_seconds=settings.LOGIN_LOCKOUT_MINUTES * 60,
-        )
+        )]
+
+        try:
+            payload = json.loads((await request.body()).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            payload = {}
+
+        email = str(payload.get("email", "")).strip().lower()
+        if email:
+            limits.append(await check_rate_limit(
+                ip=f"email:{email}",
+                endpoint="/api/auth/login",
+                max_requests=settings.LOGIN_MAX_FAILURES,
+                window_seconds=settings.LOGIN_LOCKOUT_MINUTES * 60,
+            ))
+
+        allowed = all(item[0] for item in limits)
+        remaining = min(item[1] for item in limits)
+        retry_after = max(item[2] for item in limits)
     except RedisError:
         logger.exception("Rate limit indisponivel; Redis e obrigatorio para login distribuido")
         if settings.is_production:

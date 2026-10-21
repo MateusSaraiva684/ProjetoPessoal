@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from jose import JWTError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ from app.core.security import (
     criar_access_token,
     criar_refresh_token,
     decodificar_access_token,
+    hash_refresh_token,
     hash_senha,
     verificar_senha,
 )
@@ -73,7 +75,7 @@ class AuthService:
         except IntegrityError as exc:
             self.db.rollback()
             raise BadRequestError("E-mail já cadastrado") from exc
-        logger.info("Novo usuario registrado: %s", body.email)
+            logger.info("Novo usuario registrado: user_id=%d", usuario.id)
 
     def autenticar(self, body: LoginRequest) -> Usuario:
         user = self.usuarios.get_by_email(body.email, ativo=True)
@@ -98,10 +100,57 @@ class AuthService:
             user.failed_login_attempts = 0
             user.locked_until = None
             self.db.commit()
-            logger.info("Login realizado: %s", body.email)
+            logger.info("Login realizado: user_id=%d", user.id)
             return user
 
         raise UnauthorizedError("E-mail ou senha incorretos")
+
+    def autenticar_supabase(self, access_token: str) -> Usuario:
+        if not settings.supabase_auth_enabled:
+            raise UnauthorizedError("AUTH_PROVIDER nao esta configurado para Supabase")
+        if not settings.SUPABASE_URL or not settings.SUPABASE_ANON_KEY:
+            raise UnauthorizedError("Autenticacao Supabase nao configurada")
+
+        try:
+            response = httpx.get(
+                f"{settings.SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "apikey": settings.SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {access_token}",
+                },
+                timeout=5.0,
+            )
+        except httpx.HTTPError as exc:
+            logger.warning("Falha ao validar identidade no Supabase: %s", type(exc).__name__)
+            raise UnauthorizedError("Nao foi possivel validar a sessao") from exc
+
+        if response.status_code != 200:
+            raise UnauthorizedError("Sessao Supabase invalida ou expirada")
+
+        payload = response.json()
+        email = str(payload.get("email", "")).strip().lower()
+        if not email:
+            raise UnauthorizedError("Conta Supabase sem e-mail valido")
+
+        user = self.usuarios.get_by_email(email, ativo=True)
+        if user:
+            return user
+
+        metadata = payload.get("user_metadata") or {}
+        nome = str(metadata.get("nome") or metadata.get("name") or email.split("@", 1)[0]).strip()
+        user = Usuario(
+            nome=nome[:255] or "Usuario",
+            email=email,
+            senha=hash_senha(secrets.token_urlsafe(32)),
+            ativo=True,
+            is_superuser=False,
+            role="operator",
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        logger.info("Usuario Supabase sincronizado: user_id=%d", user.id)
+        return user
 
     def iniciar_mfa(self, user: Usuario) -> str:
         secret = _totp_secret()
@@ -140,7 +189,7 @@ class AuthService:
         if not token:
             raise UnauthorizedError("Refresh token nao fornecido")
 
-        rt = self.refresh_tokens.get_by_token(token)
+        rt = self.refresh_tokens.get_by_token(hash_refresh_token(token))
         if not rt or not rt.valido:
             raise UnauthorizedError("Refresh token invalido ou expirado")
 
@@ -165,7 +214,7 @@ class AuthService:
     def revogar_refresh_token(self, token: str | None) -> None:
         if not token:
             return
-        rt = self.refresh_tokens.get_by_token(token)
+        rt = self.refresh_tokens.get_by_token(hash_refresh_token(token))
         if rt:
             rt.revogado = True
             self.db.commit()
@@ -184,7 +233,7 @@ class AuthService:
 
     def _novo_refresh_token(self, token: str, user_id: int) -> RefreshToken:
         return RefreshToken(
-            token=token,
+            token=hash_refresh_token(token),
             user_id=user_id,
             expira_em=datetime.now(timezone.utc)
             + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
