@@ -11,9 +11,6 @@ CELERY_BROKER_URL=redis://default:senha@host-do-render:6379
 CELERY_RESULT_BACKEND=redis://default:senha@host-do-render:6379
 
 SECRET_KEY=gerar_com_python_32_chars_ou_mais
-ADMIN_EMAIL=admin@admin.com
-ADMIN_PASSWORD=SenhaForte123!
-SYNC_ADMIN_PASSWORD_ON_STARTUP=true
 FRONTEND_URL=https://frontend-seu-projeto.onrender.com
 AUTH_PROVIDER=local
 SUPABASE_URL=https://seu-projeto.supabase.co
@@ -34,7 +31,6 @@ RECOGNITION_WEBHOOK_SECRET=
 SENTRY_DSN=
 SENTRY_TRACES_SAMPLE_RATE=0
 NOTIFICATION_PROVIDER=log
-SYNC_ADMIN_PASSWORD_ON_STARTUP=false
 
 # Frontend - Render
 VITE_API_URL=https://backend-seu-projeto.onrender.com

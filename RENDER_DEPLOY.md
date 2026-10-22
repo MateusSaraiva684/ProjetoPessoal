@@ -71,7 +71,7 @@ VITE_AUTH_PROVIDER=supabase
 
 O banco continua sendo definido separadamente por `DATABASE_URL`.
 
-No modo `local`, mantenha `SYNC_ADMIN_PASSWORD_ON_STARTUP=true`. O valor de
-`ADMIN_PASSWORD` no Render é a fonte única da senha do administrador; a cada
-deploy o registro local é sincronizado. Use uma senha com pelo menos 12
-caracteres.
+No modo `local`, crie o administrador uma única vez com `python cli.py
+create-admin`, conectado ao mesmo PostgreSQL configurado em `DATABASE_URL`.
+O processo solicita a senha de forma interativa e grava somente o hash no
+banco; nenhuma senha de administrador fica no Render.

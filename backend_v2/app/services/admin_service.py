@@ -157,7 +157,7 @@ class AdminService:
             raise ForbiddenError("Nao e possivel redefinir senha de outro superusuario")
         if usuario.is_superuser and settings.AUTH_PROVIDER == "local":
             raise ForbiddenError(
-                "Altere ADMIN_PASSWORD nas variaveis do Render e faca um novo deploy"
+                "Use o comando python cli.py create-admin para alterar a senha do administrador"
             )
         usuario.senha = hash_senha(body.nova_senha)
         self.db.commit()

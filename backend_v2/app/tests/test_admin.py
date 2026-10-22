@@ -196,4 +196,4 @@ def test_admin_nao_redefine_senha_do_superadmin_no_modo_local(client):
     )
 
     assert response.status_code == 403
-    assert "ADMIN_PASSWORD" in response.json()["erro"]
+    assert "create-admin" in response.json()["erro"]

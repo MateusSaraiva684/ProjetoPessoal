@@ -1,6 +1,5 @@
 import os
 import logging
-import secrets
 try:
     import sentry_sdk
 except ImportError:  # Sentry é opcional em ambientes locais.
@@ -47,7 +46,6 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title="Sistema Escolar API",
     version=settings.APP_VERSION,
-    docs_url="/docs" if not settings.is_production else None,
     redoc_url=None,
     lifespan=lifespan,
 )
@@ -121,83 +119,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 
 def startup():
-    """Inicializa a aplicacao e sincroniza o admin automaticamente."""
+    """Inicializa a aplicacao sem alterar credenciais do banco."""
     logger.info("Aplicacao iniciada - ambiente: %s", settings.ENVIRONMENT)
-    
-    if not settings.ADMIN_EMAIL:
-        raise RuntimeError("ADMIN_EMAIL e obrigatorio para iniciar o backend.")
-    if settings.AUTH_PROVIDER == "local" and not settings.ADMIN_PASSWORD:
-        raise RuntimeError("ADMIN_PASSWORD e obrigatorio para AUTH_PROVIDER=local.")
-
-    from sqlalchemy.orm import Session as DBSession
-    from app.database.session import SessionLocal
-    from app.models.models import Usuario as UsuarioModel
-    from app.core.security import hash_senha, verificar_senha
-
-    admin_password = settings.ADMIN_PASSWORD or secrets.token_urlsafe(32)
-    db: DBSession = SessionLocal()
-    try:
-        admin_user = db.query(UsuarioModel).filter(
-            UsuarioModel.email == settings.ADMIN_EMAIL
-        ).first()
-
-        if not admin_user:
-            logger.info("Criando novo usuario admin: %s", settings.ADMIN_EMAIL)
-            admin_user = UsuarioModel(
-                nome="Administrador",
-                email=settings.ADMIN_EMAIL,
-                senha=hash_senha(admin_password),
-                is_superuser=True,
-                role="superadmin",
-                ativo=True,
-            )
-            db.add(admin_user)
-            db.flush()
-            db.commit()
-            logger.info("Admin criado com sucesso: %s", settings.ADMIN_EMAIL)
-
-        else:
-            logger.info("Sincronizando admin existente: %s", settings.ADMIN_EMAIL)
-            
-            mudou = False
-            
-            if not admin_user.is_superuser:
-                logger.debug("Elevando permissoes para superuser")
-                admin_user.is_superuser = True
-                mudou = True
-            if admin_user.role != "superadmin":
-                admin_user.role = "superadmin"
-                mudou = True
-
-            if not admin_user.ativo:
-                logger.debug("Reativando administrador configurado")
-                admin_user.ativo = True
-                mudou = True
-            
-            if settings.AUTH_PROVIDER == "local":
-                senha_sincronizada = verificar_senha(settings.ADMIN_PASSWORD, admin_user.senha)
-                if not senha_sincronizada:
-                    if settings.sync_admin_password_on_startup:
-                        logger.debug("Sincronizando senha com .env")
-                        admin_user.senha = hash_senha(settings.ADMIN_PASSWORD)
-                        mudou = True
-                    else:
-                        logger.warning(
-                            "Senha do admin difere de ADMIN_PASSWORD; sincronizacao automatica desabilitada"
-                        )
-            
-            if mudou:
-                db.flush()
-                db.commit()
-                logger.info("Admin sincronizado: %s", settings.ADMIN_EMAIL)
-            else:
-                logger.debug("Admin ja estava sincronizado")
-
-    except Exception as exc:
-        logger.error("Erro ao sincronizar admin: %s", str(exc), exc_info=True)
-        raise
-    finally:
-        db.close()
 
 
 @app.get("/api/health")

@@ -24,12 +24,6 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      - key: ADMIN_EMAIL
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
-      - key: SYNC_ADMIN_PASSWORD_ON_STARTUP
-        value: "true"
       - key: FRONTEND_URL
         sync: false
       - key: AUTH_PROVIDER

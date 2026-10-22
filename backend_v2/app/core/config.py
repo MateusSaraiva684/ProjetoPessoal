@@ -185,11 +185,6 @@ class Settings:
     def supabase_auth_enabled(self) -> bool:
         return self.AUTH_PROVIDER == "supabase"
 
-    @property
-    def sync_admin_password_on_startup(self) -> bool:
-        return _env_flag("SYNC_ADMIN_PASSWORD_ON_STARTUP", self.AUTH_PROVIDER == "local")
-
-
 settings = Settings()
 
 if settings.ENVIRONMENT not in ("testing",):
@@ -197,12 +192,6 @@ if settings.ENVIRONMENT not in ("testing",):
         raise RuntimeError("SECRET_KEY não definida nas variáveis de ambiente.")
     if not settings.DATABASE_URL:
         raise RuntimeError("DATABASE_URL não definida nas variáveis de ambiente.")
-    if not settings.ADMIN_EMAIL:
-        raise RuntimeError("ADMIN_EMAIL não definido nas variáveis de ambiente.")
-    if settings.AUTH_PROVIDER == "local" and not settings.ADMIN_PASSWORD:
-        raise RuntimeError("ADMIN_PASSWORD não definido para AUTH_PROVIDER=local.")
-    if settings.AUTH_PROVIDER == "local" and settings.is_production and len(settings.ADMIN_PASSWORD) < 12:
-        raise RuntimeError("ADMIN_PASSWORD deve ter pelo menos 12 caracteres em production.")
     if settings.AUTH_PROVIDER not in ("local", "supabase"):
         raise RuntimeError("AUTH_PROVIDER deve ser 'local' ou 'supabase'.")
     if settings.is_production and not settings.REDIS_URL:
